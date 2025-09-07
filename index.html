@@ -199,3 +199,120 @@ startGame();
 
 </body>
 </html>
+        arrow.y + Math.sin(aimAngle * Math.PI / 180) * 70
+    );
+    ctx.strokeStyle = "lime";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+}
+
+function drawTarget() {
+    ctx.beginPath();
+    ctx.arc(target.x, target.y, target.r, 0, Math.PI * 2);
+    ctx.fillStyle = "red";
+    ctx.fill();
+    ctx.closePath();
+}
+
+function drawObstacles() {
+    ctx.fillStyle = "gray";
+    obstacles.forEach(o => {
+        ctx.beginPath();
+        ctx.arc(o.x, o.y, o.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.closePath();
+    });
+}
+
+function drawScore() {
+    ctx.fillStyle = "white";
+    ctx.font = "20px Arial";
+    ctx.fillText("Score: " + score, 20, 40);
+}
+
+function resetArrow() {
+    arrow.x = canvas.width/2;
+    arrow.y = canvas.height-60;
+    arrow.dx = 0;
+    arrow.dy = 0;
+    arrow.active = false;
+}
+
+function update() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Move target
+    target.x += target.dx;
+    if (target.x < target.r || target.x > canvas.width - target.r) target.dx *= -1;
+
+    // Move obstacles
+    obstacles.forEach(o => {
+        o.x += o.dx;
+        if (o.x < o.r || o.x > canvas.width - o.r) o.dx *= -1;
+    });
+
+    // Move arrow
+    if (arrow.active) {
+        arrow.x += arrow.dx;
+        arrow.y += arrow.dy;
+
+        if (arrow.x < 0 || arrow.x > canvas.width) arrow.dx *= -1;
+        if (arrow.y < 0) resetArrow();
+
+        // Hit target
+        let dx = arrow.x - target.x;
+        let dy = arrow.y - target.y;
+        if (Math.sqrt(dx*dx + dy*dy) < target.r) {
+            score++;
+            resetArrow();
+        }
+
+        // Hit obstacles
+        for (let o of obstacles) {
+            let odx = arrow.x - o.x;
+            let ody = arrow.y - o.y;
+            if (Math.sqrt(odx*odx + ody*ody) < o.r) {
+                score = Math.max(0, score - 1);
+                resetArrow();
+                break;
+            }
+        }
+    }
+
+    drawTarget();
+    drawObstacles();
+    if (!arrow.active) drawAimLine();
+    drawArrow();
+    drawScore();
+}
+
+canvas.addEventListener("mousemove", (e) => {
+    if (!arrow.active) {
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        aimAngle = Math.atan2(mouseY - arrow.y, mouseX - arrow.x) * 180 / Math.PI;
+    }
+});
+
+canvas.addEventListener("click", () => {
+    if (!arrow.active) {
+        arrow.dx = Math.cos(aimAngle * Math.PI / 180) * arrow.speed;
+        arrow.dy = Math.sin(aimAngle * Math.PI / 180) * arrow.speed;
+        arrow.active = true;
+    }
+});
+
+// Start automatically at 60 FPS
+function startGame() {
+    score = 0;
+    resetArrow();
+    createObstacles(5);
+    if (gameInterval) clearInterval(gameInterval);
+    gameInterval = setInterval(update, 1000 / 60);
+}
+startGame();
+</script>
+
+</body>
+</html>
